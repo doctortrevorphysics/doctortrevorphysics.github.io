@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accessible Drawing Pad</title>
+    <!-- Tailwind CSS for styling and responsiveness -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Prevent browser pull-to-refresh and scrolling while drawing on the canvas */
+        canvas {
+            touch-action: none;
+        }
+        
+        /* Custom focus styles for keyboard navigation accessibility */
+        button:focus-visible, input:focus-visible {
+            outline: 3px solid #2563eb;
+            outline-offset: 2px;
+        }
+
+        /* Checkered background pattern to indicate canvas boundaries clearly */
+        .canvas-container {
+            background-image: 
+                linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+                linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+                linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-800 font-sans flex flex-col items-center py-8 px-4">
+
+    <header class="mb-6 text-center">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Drawing Pad</h1>
+        <p class="text-sm text-gray-600">Draw with your finger, stylus, or mouse.</p>
+    </header>
+
+    <main class="w-full max-w-[512px] flex flex-col gap-4">
+        
+        <!-- Toolbar: Colors -->
+        <section aria-label="Color Palette" class="bg-white p-3 rounded-xl shadow-sm border border-gray-200">
+            <h2 class="sr-only">Choose a color</h2>
+            <div id="color-palette" class="flex flex-wrap gap-2 justify-center" role="radiogroup" aria-label="Drawing Colors">
+                <!-- Color buttons will be dynamically injected here from APP_CONFIG -->
+            </div>
+        </section>
+
+        <!-- Toolbar: Tools (Brush size, etc) -->
+        <section aria-label="Drawing Tools" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between gap-4">
+            <div class="flex-1 flex items-center gap-3">
+                <label for="brush-size" class="text-sm font-medium whitespace-nowrap">Brush Size:</label>
+                <input type="range" id="brush-size" min="1" max="50" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            </div>
+            <div id="brush-size-display" class="w-8 text-center text-sm font-semibold bg-gray-100 rounded py-1" aria-live="polite">
+                <!-- Size display -->
+            </div>
+        </section>
+
+        <!-- Canvas Area -->
+        <section aria-label="Drawing Canvas Area" class="relative shadow-md rounded-xl overflow-hidden border-2 border-gray-300 bg-white canvas-container">
+            <!-- 
+                Internal width/height is fixed to 512x512.
+                CSS width/max-width ensures it visually scales on mobile devices 
+                while maintaining the correct internal coordinate map and export size.
+            -->
+            <canvas 
+                id="drawing-canvas" 
+                width="512" 
+                height="512" 
+                class="w-full max-w-[512px] aspect-square block bg-transparent cursor-crosshair"
+                aria-label="Interactive drawing canvas. Use mouse or touch to draw."
+                role="img">
+                Your browser does not support the HTML5 canvas element.
+            </canvas>
+        </section>
+
+        <!-- Action Buttons -->
+        <section aria-label="Canvas Actions" class="flex gap-3 mt-2">
+            <button id="btn-clear" class="flex-1 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                Clear Canvas
+            </button>
+            <button id="btn-download" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                Download PNG
+            </button>
+        </section>
+
+    </main>
+
+    <script>
+        // ============================================================================
+        // TEACHER EDITABLE CONTENT
+        // Modify the arrays and values below to change the app's content and settings.
+        // ============================================================================
+        
+        const APP_CONFIG = {
+            // Accessible Color Palette (Okabe-Ito Palette - colorblind friendly)
+            colors: [
+                { name: "Black", hex: "#000000" },
+                { name: "Orange", hex: "#E69F00" },
+                { name: "Sky Blue", hex: "#56B4E9" },
+                { name: "Bluish Green", hex: "#009E73" },
+                { name: "Yellow", hex: "#F0E442" },
+                { name: "Blue", hex: "#0072B2" },
+                { name: "Vermillion (Red)", hex: "#D55E00" },
+                { name: "Reddish Purple", hex: "#CC79A7" },
+                { name: "White (Eraser)", hex: "#FFFFFF" }
+            ],
+            
+            // Default settings
+            initialColorHex: "#000000",
+            initialBrushSize: 6,
+            
+            // Canvas Export Size (Pixels)
+            canvasWidth: 512,
+            canvasHeight: 512
+        };
+
+        // ============================================================================
+        // APP LOGIC & FUNCTIONALITY (Do not modify below unless changing behavior)
+        // ============================================================================
+
+        // State Variables
+        let isDrawing = false;
+        let currentColor = APP_CONFIG.initialColorHex;
+        let currentBrushSize = APP_CONFIG.initialBrushSize;
+        let lastX = 0;
+        let lastY = 0;
+
+        // DOM Elements
+        const canvas = document.getElementById('drawing-canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const colorPaletteContainer = document.getElementById('color-palette');
+        const brushSizeInput = document.getElementById('brush-size');
+        const brushSizeDisplay = document.getElementById('brush-size-display');
+        const btnClear = document.getElementById('btn-clear');
+        const btnDownload = document.getElementById('btn-download');
+
+        // Initialize App
+        function initApp() {
+            // Set up Canvas background (fill with white so PNG isn't transparent)
+            clearCanvas();
+
+            // Set up stroke styling
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+
+            // Build Color Palette UI
+            buildColorPalette();
+
+            // Setup Brush Size Tool
+            brushSizeInput.value = currentBrushSize;
+            updateBrushSizeDisplay();
+
+            // Attach Event Listeners
+            attachCanvasEvents();
+            attachToolEvents();
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // --- UI Builders ---
+
+        function buildColorPalette() {
+            APP_CONFIG.colors.forEach((color, index) => {
+                const btn = document.createElement('button');
+                
+                // Styling
+                btn.className = `w-10 h-10 rounded-full border-2 transition-transform hover:scale-110 focus:scale-110 color-btn`;
+                btn.style.backgroundColor = color.hex;
+                
+                // Accessibility
+                btn.setAttribute('role', 'radio');
+                btn.setAttribute('aria-label', color.name);
+                
+                // Highlight border depending on lightness of color
+                if (color.hex.toUpperCase() === '#FFFFFF') {
+                    btn.style.borderColor = '#d1d5db'; // gray-300 border for white to make it visible
+                } else {
+                    btn.style.borderColor = 'transparent';
+                }
+
+                // Initial selection state
+                const isSelected = color.hex === currentColor;
+                btn.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+                if (isSelected) {
+                    btn.classList.add('ring-4', 'ring-blue-300', 'border-gray-800');
+                }
+
+                // Click event
+                btn.addEventListener('click', () => {
+                    currentColor = color.hex;
+                    updateColorSelectionUI(btn);
+                });
+
+                colorPaletteContainer.appendChild(btn);
+            });
+        }
+
+        function updateColorSelectionUI(selectedBtn) {
+            const allBtns = document.querySelectorAll('.color-btn');
+            allBtns.forEach(btn => {
+                btn.setAttribute('aria-checked', 'false');
+                btn.classList.remove('ring-4', 'ring-blue-300', 'border-gray-800');
+            });
+
+            selectedBtn.setAttribute('aria-checked', 'true');
+            selectedBtn.classList.add('ring-4', 'ring-blue-300', 'border-gray-800');
+        }
+
+        function updateBrushSizeDisplay() {
+            brushSizeDisplay.textContent = currentBrushSize;
+        }
+
+        // --- Event Listeners ---
+
+        function attachToolEvents() {
+            brushSizeInput.addEventListener('input', (e) => {
+                currentBrushSize = parseInt(e.target.value, 10);
+                updateBrushSizeDisplay();
+            });
+
+            btnClear.addEventListener('click', clearCanvas);
+
+            btnDownload.addEventListener('click', () => {
+                // Create a temporary link element to trigger the download
+                const link = document.createElement('a');
+                link.download = `drawing_${new Date().getTime()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        function attachCanvasEvents() {
+            // Mouse Events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            window.addEventListener('mouseup', stopDrawing);
+
+            // Touch Events
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            window.addEventListener('touchend', stopDrawing);
+        }
+
+        // --- Drawing Logic ---
+
+        // Helper to accurately map screen coordinates to canvas pixels
+        // regardless of CSS scaling on mobile screens
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            
+            // Calculate scale in case the CSS width is smaller than the actual canvas width
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            let clientX, clientY;
+
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function startDrawing(e) {
+            // Only left mouse button or touch
+            if (e.button && e.button !== 0) return; 
+            
+            isDrawing = true;
+            const pos = getPointerPos(e);
+            lastX = pos.x;
+            lastY = pos.y;
+            
+            // Draw a dot immediately upon clicking/touching
+            ctx.beginPath();
+            ctx.fillStyle = currentColor;
+            ctx.arc(lastX, lastY, currentBrushSize / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+
+            const pos = getPointerPos(e);
+
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = currentBrushSize;
+            ctx.stroke();
+
+            lastX = pos.x;
+            lastY = pos.y;
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        // Touch specific handlers to prevent scrolling while drawing
+        function handleTouchStart(e) {
+            if (e.touches.length === 1) {
+                e.preventDefault(); // Prevent scrolling/zooming
+                startDrawing(e);
+            }
+        }
+
+        function handleTouchMove(e) {
+            if (e.touches.length === 1) {
+                e.preventDefault(); // Prevent scrolling/zooming
+                draw(e);
+            }
+        }
+
+        // Run the app when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
+</body>
+</html>
