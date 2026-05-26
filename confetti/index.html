@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Click Confetti Generator</title>
+    <style>
+        /* CSS Reset and base styles */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Prevent scrollbars from falling confetti */
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            /* Center the text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        /* Instruction text styling */
+        .instruction {
+            font-size: clamp(1.5rem, 5vw, 3.5rem);
+            font-weight: 700;
+            color: #475569;
+            text-align: center;
+            padding: 2rem;
+            pointer-events: none; /* Allows clicks to pass through to the document body */
+            user-select: none;
+            animation: pulse 3s infinite ease-in-out;
+            text-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        /* Gentle pulsing animation to encourage interaction */
+        @keyframes pulse {
+            0%   { transform: scale(1); opacity: 0.7; }
+            50%  { transform: scale(1.03); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.7; }
+        }
+
+        /* Accessibility: Show a clear focus ring when navigating via keyboard */
+        body:focus-visible {
+            outline: 6px solid #3b82f6;
+            outline-offset: -6px;
+        }
+    </style>
+</head>
+
+<!-- We make the body focusable for screen readers and keyboard users -->
+<body tabindex="0" aria-label="Interactive confetti area. Click anywhere with your mouse, or press the Spacebar or Enter key to throw confetti.">
+
+    <main class="instruction" aria-hidden="true">
+        Click anywhere to celebrate! ✨
+    </main>
+
+    <!-- Load canvas-confetti library via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        // ============================================================================
+        // TEACHER / ADMIN SETTINGS
+        // Change these values to customize how the confetti behaves.
+        // ============================================================================
+        const CONFETTI_SETTINGS = {
+            particleCount: 120,    // Number of confetti pieces spawned per click
+            spread: 80,            // How wide the confetti explodes (in degrees)
+            startVelocity: 35,     // How fast the confetti shoots out initially
+            gravity: 0.8,          // How quickly the confetti falls (higher = faster)
+            ticks: 250,            // How long the confetti stays on screen before vanishing
+            colors: [              // List of Hex colors for the confetti
+                '#FF3B30', // Red
+                '#FF9500', // Orange
+                '#FFCC00', // Yellow
+                '#4CD964', // Green
+                '#5AC8FA', // Light Blue
+                '#007AFF', // Dark Blue
+                '#5856D6', // Purple
+                '#FF2D55'  // Pink
+            ]
+        };
+        // ============================================================================
+
+
+        /**
+         * Triggers the confetti explosion at a specific screen location.
+         * The library uses coordinates between 0 and 1 (ratios of the screen size).
+         * @param {number} xRatio - The horizontal position (0.0 = left edge, 1.0 = right edge)
+         * @param {number} yRatio - The vertical position (0.0 = top edge, 1.0 = bottom edge)
+         */
+        function throwConfetti(xRatio, yRatio) {
+            // Failsafe in case the CDN was blocked by a firewall or adblocker
+            if (typeof confetti !== 'function') {
+                console.error("Confetti library hasn't loaded! Check your network connection or adblocker.");
+                return;
+            }
+
+            confetti({
+                particleCount: CONFETTI_SETTINGS.particleCount,
+                spread: CONFETTI_SETTINGS.spread,
+                startVelocity: CONFETTI_SETTINGS.startVelocity,
+                gravity: CONFETTI_SETTINGS.gravity,
+                ticks: CONFETTI_SETTINGS.ticks,
+                colors: CONFETTI_SETTINGS.colors,
+                origin: { x: xRatio, y: yRatio }
+                // disableForReducedMotion: true // Temporarily removed. If your OS has "Reduce Motion" on, this will hide the animation completely.
+            });
+        }
+
+        /**
+         * Handle Mouse / Touch Clicks
+         */
+        window.addEventListener('click', function(event) {
+            // Convert exact pixel clicked into a ratio between 0 and 1
+            const xPositionRatio = event.clientX / window.innerWidth;
+            const yPositionRatio = event.clientY / window.innerHeight;
+            
+            throwConfetti(xPositionRatio, yPositionRatio);
+        });
+
+        /**
+         * Handle Keyboard Input (Accessibility)
+         */
+        window.addEventListener('keydown', function(event) {
+            // If the user hits Enter or Space, trigger confetti from the exact center of the screen
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault(); // Stop the spacebar from scrolling the page down
+                throwConfetti(0.5, 0.5); // 0.5 is exactly the middle (50%)
+            }
+        });
+
+        /**
+         * Setup on Load
+         */
+        window.addEventListener('DOMContentLoaded', function() {
+            // Automatically focus the body so keyboard users can interact immediately without tabbing
+            document.body.focus();
+        });
+    </script>
+</body>
+</html>
