@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Teleprompter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        #editor-container {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .controls {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        button, input[type="file"], .format-btn, input[type="color"] {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover, .format-btn:hover {
+            background: #0056b3;
+        }
+        .format-btn {
+            background: #444;
+        }
+        .format-btn:hover {
+            background: #666;
+        }
+        input[type="color"] {
+            padding: 2px;
+            height: 38px;
+            width: 50px;
+        }
+        .divider {
+            width: 2px;
+            background-color: #444;
+            height: 30px;
+            margin: 0 10px;
+        }
+        #editor {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 18px;
+            border-radius: 5px;
+            background: #2d2d2d;
+            color: white;
+            border: 1px solid #444;
+            overflow-y: auto;
+            outline: none;
+        }
+        
+        /* Teleprompter Mode Styles */
+        #prompter-container {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            background-color: black;
+            padding: 40px;
+            overflow-y: hidden; 
+            position: relative;
+        }
+        #prompter-text {
+            font-size: 60px;
+            line-height: 1.5;
+            color: #555; 
+            transform: scaleX(-1); /* Default mirrored */
+            text-align: center;
+            height: 100%;
+            overflow-y: auto;
+            padding-bottom: 50vh; 
+        }
+        .text-chunk {
+            display: block;
+            margin-bottom: 20px;
+            transition: color 0.3s, opacity 0.3s;
+            opacity: 0.3;
+        }
+        .text-chunk.active {
+            opacity: 1;
+            color: #ffffff;
+        }
+        .prompter-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+        }
+        #close-prompter {
+            background: #dc3545;
+        }
+        #toggle-mirror {
+            background: #ffc107;
+            color: black;
+        }
+        .hint {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: #666;
+            font-size: 18px;
+            pointer-events: none;
+            transform: scaleX(-1); /* Keeps hint mirrored with text */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Editor Mode -->
+    <div id="editor-container">
+        <div class="controls">
+            <button onclick="document.getElementById('file-input').click()">Import File</button>
+            <input type="file" id="file-input" style="display:none" accept=".html,.txt" onchange="importText(event)">
+            <button onclick="exportText()">Export File</button>
+            
+            <div class="divider"></div>
+            
+            <button class="format-btn" onclick="formatText('italic')" title="Italicize selected text"><i>I</i></button>
+            <input type="color" id="textColor" title="Choose text color" onchange="formatText('foreColor', this.value)">
+            
+            <div class="divider"></div>
+
+            <button onclick="startPrompter()" style="background: #28a745;">Start Teleprompter</button>
+        </div>
+        
+        <div id="editor" contenteditable="true">
+            Welcome to the smart prompter. <br><br>
+            It will now listen to the actual words you are saying. <br><br>
+            If you pause in the middle of a sentence, it won't jump ahead anymore. <br><br>
+            It waits until it hears you say the last few words of the paragraph. <br><br>
+            If it ever gets stuck, just tap the spacebar or down arrow to move forward manually.
+        </div>
+    </div>
+
+    <!-- Teleprompter Mode -->
+    <div id="prompter-container">
+        <div class="prompter-controls">
+            <button id="toggle-mirror" onclick="toggleMirror()">Mirror: ON</button>
+            <button id="close-prompter" onclick="stopPrompter()">Exit Prompter</button>
+        </div>
+        <div id="prompter-text"></div>
+        <div class="hint" id="prompter-hint">Listening... (Use Spacebar/Arrows to manual override)</div>
+    </div>
+
+    <script>
+        // --- 1. Import, Export, and Formatting ---
+        const editor = document.getElementById('editor');
+
+        function formatText(command, value = null) {
+            document.execCommand(command, false, value);
+            editor.focus();
+        }
+
+        function importText(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                if(file.name.endsWith('.html')) editor.innerHTML = content;
+                else editor.innerText = content;
+            };
+            reader.readAsText(file);
+            event.target.value = ''; 
+        }
+
+        function exportText() {
+            const text = editor.innerHTML;
+            const blob = new Blob([text], { type: 'text/html' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'teleprompter-script.html';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        // --- 2. Mirror Toggle ---
+        let isMirrored = true;
+        function toggleMirror() {
+            isMirrored = !isMirrored;
+            const prompterTextDiv = document.getElementById('prompter-text');
+            const toggleBtn = document.getElementById('toggle-mirror');
+            const hintDiv = document.getElementById('prompter-hint');
+            
+            if (isMirrored) {
+                prompterTextDiv.style.transform = 'scaleX(-1)';
+                hintDiv.style.transform = 'scaleX(-1)';
+                toggleBtn.innerText = 'Mirror: ON';
+            } else {
+                prompterTextDiv.style.transform = 'scaleX(1)';
+                hintDiv.style.transform = 'scaleX(1)';
+                toggleBtn.innerText = 'Mirror: OFF';
+            }
+        }
+
+        // --- 3. Advanced Voice Recognition ---
+        let recognition;
+        let currentChunkIndex = 0;
+        let textChunks = [];
+        let hasReachedEnd = false;
+
+        function startPrompter() {
+            const textContent = editor.innerText.trim();
+            if (!textContent) return alert("Please add some text first.");
+
+            document.getElementById('editor-container').style.display = 'none';
+            document.getElementById('prompter-container').style.display = 'flex';
+
+            const prompterDiv = document.getElementById('prompter-text');
+            prompterDiv.innerHTML = '';
+            textChunks = [];
+            hasReachedEnd = false;
+            
+            const nodes = Array.from(editor.childNodes);
+            nodes.forEach((node, index) => {
+                const text = node.textContent || node.innerText || '';
+                if (!text.trim()) return; 
+
+                const chunkDiv = document.createElement('div');
+                chunkDiv.className = 'text-chunk';
+                
+                if (node.nodeType === Node.ELEMENT_NODE) chunkDiv.innerHTML = node.innerHTML;
+                else chunkDiv.innerText = text;
+                
+                prompterDiv.appendChild(chunkDiv);
+                textChunks.push(chunkDiv);
+            });
+
+            currentChunkIndex = 0;
+            highlightChunk(currentChunkIndex);
+            startListening();
+        }
+
+        function highlightChunk(index) {
+            if (index >= textChunks.length) return;
+            textChunks.forEach(c => c.classList.remove('active'));
+            
+            const activeChunk = textChunks[index];
+            activeChunk.classList.add('active');
+            activeChunk.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Keyboard Overrides
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('prompter-container').style.display === 'flex') {
+                if (e.key === 'ArrowDown' || e.key === ' ') {
+                    e.preventDefault();
+                    manualAdvance();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (currentChunkIndex > 0) {
+                        currentChunkIndex--;
+                        highlightChunk(currentChunkIndex);
+                    }
+                }
+            }
+        });
+
+        function manualAdvance() {
+            if (currentChunkIndex < textChunks.length - 1) {
+                currentChunkIndex++;
+                highlightChunk(currentChunkIndex);
+            }
+        }
+
+        // String matching function
+        function isChunkComplete(transcript, targetText) {
+            // Only look at the last 15 words the user said to prevent matching old sentences
+            const tWords = transcript.trim().split(/\s+/).slice(-15); 
+            const transcriptString = tWords.join(' ');
+            
+            const chunkWords = targetText.trim().split(/\s+/);
+            if (chunkWords.length === 0) return true;
+            
+            // Grab the last 3 words of the target text chunk
+            const numWordsToCheck = Math.min(3, chunkWords.length);
+            const endWords = chunkWords.slice(-numWordsToCheck);
+            
+            // Create variations in case the browser misheard one word (fuzzy match)
+            let validPhrases = [];
+            if (endWords.length === 3) {
+                validPhrases.push(`${endWords[0]} ${endWords[1]} ${endWords[2]}`); // Exact
+                validPhrases.push(`${endWords[1]} ${endWords[2]}`); // Missed 1st word
+                validPhrases.push(`${endWords[0]} ${endWords[2]}`); // Missed 2nd word
+                validPhrases.push(`${endWords[0]} ${endWords[1]}`); // Missed 3rd word
+            } else if (endWords.length === 2) {
+                validPhrases.push(`${endWords[0]} ${endWords[1]}`);
+                validPhrases.push(endWords[0]);
+                validPhrases.push(endWords[1]);
+            } else if (endWords.length === 1) {
+                validPhrases.push(endWords[0]);
+            }
+
+            // If the transcript contains any of these valid end phrases, we are done
+            for (let phrase of validPhrases) {
+                if (phrase.length > 0 && transcriptString.includes(phrase)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function startListening() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return;
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = true; 
+            
+            // KEY CHANGE: Stream words in real-time as you say them
+            recognition.interimResults = true; 
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                if (hasReachedEnd) return;
+
+                let currentTranscript = '';
+                // Gather all words said in the current listening session
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    currentTranscript += event.results[i][0].transcript;
+                }
+
+                // Clean up punctuation and capitals
+                currentTranscript = currentTranscript.toLowerCase().replace(/[^\w\s]/g, '');
+                
+                const currentChunkElement = textChunks[currentChunkIndex];
+                const currentTargetText = currentChunkElement.innerText.toLowerCase().replace(/[^\w\s]/g, '');
+
+                // Check if the words we are saying match the end of the text block
+                if (isChunkComplete(currentTranscript, currentTargetText)) {
+                    if (currentChunkIndex < textChunks.length - 1) {
+                        currentChunkIndex++;
+                        highlightChunk(currentChunkIndex);
+                        
+                        // Restart recognition engine to clear its transcript memory
+                        recognition.stop(); 
+                    } else {
+                        hasReachedEnd = true;
+                        recognition.stop();
+                    }
+                }
+            };
+
+            recognition.onerror = (event) => console.error("Speech error:", event.error);
+            
+            recognition.onend = () => {
+                // Automatically restart listening unless we closed the prompter or finished the script
+                if (!hasReachedEnd && document.getElementById('prompter-container').style.display !== 'none') {
+                    recognition.start();
+                }
+            };
+
+            recognition.start();
+        }
+
+        function stopPrompter() {
+            hasReachedEnd = true;
+            if (recognition) {
+                recognition.onend = null; 
+                recognition.stop();
+            }
+            document.getElementById('prompter-container').style.display = 'none';
+            document.getElementById('editor-container').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
