@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lesson: Kinetic Energy</title>
+    <style>
+        /* ==========================================================================
+           Base & Typography
+           ========================================================================== */
+        :root {
+          /* Theme Colors */
+          --color-dark-green: #1C4F33;  /* Pine */
+          --color-light-green: #E1ECE5; /* Sage */
+          --color-border-grey: #595959; /* Accessible 4.6:1 contrast grey */
+          --bg-light-grey: #f5f5f5;
+          --color-light-blue: #E4F1FA;  /* Accessible Light Blue */
+          
+          /* Warning Colors */
+          --color-dark-rust: #7A2E00;   /* Accessible Warning Text/Border */
+          --color-light-peach: #FCECE3; /* Warning Background */
+          
+          /* Typography */
+          --font-primary: Verdana, Geneva, sans-serif;
+          --font-heading: Georgia, serif;
+          --font-mono: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+          --text-main: #1a1a1a;
+          --text-black: #000000;
+          --bg-main: #ffffff;
+        }
+
+        html {
+          box-sizing: border-box;
+          font-size: 100%; 
+        }
+
+        *, *:before, *:after {
+          box-sizing: inherit;
+        }
+
+        body {
+          font-family: var(--font-primary);
+          color: var(--text-main);
+          background-color: var(--bg-main);
+          line-height: 1.6;
+          margin: 0;
+          padding: 0; 
+        }
+
+        /* Central Layout Container */
+        .container {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 1rem; 
+        }
+
+        /* Responsive Image Default */
+        img {
+          max-width: 100%;
+          height: auto;
+        }
+
+        /* ==========================================================================
+           Headings & Interactive Elements
+           ========================================================================== */
+        h1, h2, h3, h4, h5, h6 {
+          font-family: var(--font-heading);
+          color: var(--color-dark-green);
+          line-height: 1.2;
+          margin-top: 1.5em;
+          margin-bottom: 0.5em;
+          font-weight: 700;
+        }
+
+        /* Standard Hyperlink Styling */
+        a {
+          color: #0000EE; 
+          text-decoration: underline;
+          text-underline-offset: 3px; 
+        }
+
+        a:visited {
+          color: #551A8B; 
+        }
+
+        a:hover, a:active {
+          text-decoration-thickness: 2px; 
+        }
+
+        /* WCAG 2.2 Minimum Target Size & Focus States */
+        button {
+          min-height: 24px; 
+          min-width: 24px;
+        }
+
+        :focus-visible {
+          outline: 3px solid var(--color-dark-green);
+          outline-offset: 2px;
+        }
+
+        /* ==========================================================================
+           General Components (Lists, Tables, Quotes, Code)
+           ========================================================================== */
+
+        /* Concept Box */
+        .concept-box {
+          background-color: var(--color-light-green);
+          border-left: 4px solid var(--color-dark-green);
+          border-radius: 4px;
+          padding: 15px;
+          margin-bottom: 20px;
+        }
+
+        /* Lists */
+        ul, ol {
+          margin-top: 0.8em; 
+          margin-bottom: 0.8em;
+          padding-left: 2em; 
+        }
+
+        ul {
+          list-style-type: disc; 
+        }
+
+        li {
+          margin-bottom: 0.5em; 
+        }
+
+        li:last-child {
+          margin-bottom: 0; 
+        }
+
+        /* Data Tables */
+        table {
+          border-collapse: collapse;
+          width: 100%; 
+          margin-bottom: 1.5em;
+        }
+
+        th, td {
+          border: 1px solid var(--color-border-grey);
+          padding: 12px 15px; 
+          color: var(--text-black); 
+          text-align: left;
+          vertical-align: top;
+        }
+
+        th {
+          background-color: var(--color-light-green);
+          color: var(--color-dark-green); 
+          font-weight: 700;
+        }
+
+        /* Blockquotes & Code */
+        blockquote {
+          margin: 1.5em 0;
+          padding: 0.5em 0 0.5em 1.5em;
+          border-left: 4px solid var(--color-border-grey);
+          font-style: italic;
+          color: var(--text-main);
+        }
+
+        code, pre {
+          font-family: var(--font-mono);
+          font-size: 0.95em; 
+        }
+
+        code {
+          background-color: var(--bg-light-grey);
+          padding: 0.1em 0.3em;
+          border-radius: 3px;
+          color: var(--text-black); 
+        }
+
+        pre {
+          background-color: var(--bg-light-grey);
+          border: 1px solid var(--color-border-grey);
+          border-radius: 4px;
+          padding: 15px;
+          overflow-x: auto; 
+          margin-bottom: 1.5em;
+        }
+
+        pre code {
+          background-color: transparent; 
+          padding: 0;
+          font-size: 1em; 
+        }
+
+        /* MathML Equations */
+        .math-container {
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          margin: 1em 0;
+          font-size: 1.15em;
+          width: 100%;
+        }
+
+        .math-container math[display="block"] {
+          margin: 0;
+        }
+
+        /* ==========================================================================
+           Lesson Structural Sections
+           ========================================================================== */
+
+        /* 1. Objectives Section */
+        .lesson-objectives {
+          background-color: var(--bg-light-grey);
+          border-top: 4px solid var(--color-dark-green);
+          padding: 20px;
+          margin-bottom: 2em;
+        }
+
+        .lesson-objectives h2 {
+          margin-top: 0; 
+        }
+
+        /* 2. Main Equation Box */
+        .main-equation {
+          background-color: var(--color-light-green);
+          border: 2px solid var(--color-dark-green);
+          border-radius: 6px;
+          padding: 20px;
+          margin-bottom: 2em;
+        }
+
+        .main-equation h2 {
+          margin-top: 0;
+        }
+
+        /* 3. Caution Section */
+        .caution-box {
+          background-color: var(--color-light-peach);
+          border-left: 4px solid var(--color-dark-rust);
+          color: var(--text-main);
+          border-radius: 4px;
+          padding: 15px;
+          margin-bottom: 2em;
+        }
+
+        /* 4. Sample Calculations Wrapper */
+        .sample-calculation {
+          border-left: 4px solid var(--color-border-grey);
+          padding-left: 20px;
+          margin-bottom: 2em;
+        }
+
+        /* 5. Review Section */
+        .lesson-review {
+          background-color: var(--color-light-blue);
+          color: var(--text-main); 
+          padding: 25px;
+          border-radius: 6px;
+          margin-top: 3em;
+        }
+
+        .lesson-review h2 {
+          color: var(--color-dark-green); 
+          margin-top: 0;
+          border-bottom: 2px solid var(--color-dark-green);
+          padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <h1>Kinetic Energy</h1>
+
+        <div class="lesson-objectives">
+            <h2>Learning Objectives</h2>
+            <ul>
+                <li>To state the equation for the kinetic energy of an object.</li>
+                <li>To use the equation for kinetic energy to determine the kinetic energy, mass, and/or velocity of an object when given appropriate information.</li>
+                <li>To describe the effects on kinetic energy when changing the mass or speed of an object.</li>
+            </ul>
+        </div>
+
+        <div class="main-equation">
+            <h2>The Kinetic Energy Equation</h2>
+            <p>Kinetic energy is the energy of motion. Any object that has mass and is moving possesses kinetic energy. The fundamental equation for kinetic energy is defined as:</p>
+            
+            <div class="math-container">
+                <math display="block">
+                    <mi>K</mi>
+                    <mo>=</mo>
+                    <mfrac>
+                        <mn>1</mn>
+                        <mn>2</mn>
+                    </mfrac>
+                    <mi>m</mi>
+                    <msup>
+                        <mover>
+                            <mi>v</mi>
+                            <mo>&#x2192;</mo>
+                        </mover>
+                        <mn>2</mn>
+                    </msup>
+                </math>
+            </div>
+            
+            <p><strong>Variable Definitions:</strong></p>
+            <ul>
+                <li><strong>K</strong> = Kinetic Energy (measured in Joules, J)</li>
+                <li><strong>m</strong> = Mass of the object (measured in kilograms, kg)</li>
+                <li><strong><math><mover><mi>v</mi><mo>&#x2192;</mo></mover></math></strong> = Velocity of the object (measured in meters per second, m/s)</li>
+            </ul>
+        </div>
+
+        <div class="caution-box">
+            <h3>Caution: Common Mistakes!</h3>
+            <p>When using the kinetic energy equation, keep two things in mind:</p>
+            <ul>
+                <li><strong>Only the velocity is squared!</strong> Make sure you square the velocity <em>before</em> multiplying by the mass and one-half.</li>
+                <li><strong>Watch your units!</strong> Mass must always be in kilograms (kg) to result in Joules. If you are given grams (g), you must convert to kg first.</li>
+            </ul>
+        </div>
+
+        <div class="concept-box">
+            <h3>Concept Box: The Power of Speed</h3>
+            <p>Because the velocity term is squared in our equation (<math><msup><mover><mi>v</mi><mo>&#x2192;</mo></mover><mn>2</mn></msup></math>), speed has a massive impact on kinetic energy. If you double the mass of an object, you double its kinetic energy. However, if you <strong>double the speed</strong> of an object, its kinetic energy <strong>quadruples</strong> (<math><msup><mn>2</mn><mn>2</mn></msup><mo>=</mo><mn>4</mn></math>)!</p>
+        </div>
+
+        <h3>Sample Calculation: A Baseball Pitch</h3>
+        <div class="sample-calculation">
+            <p>A baseball with a mass of 0.145 kg is thrown by a pitcher. If the baseball possesses 109 Joules of kinetic energy, what is the velocity of the pitch?</p>
+            
+            <p><strong>Knowns:</strong></p>
+            <ul>
+                <li>m = 0.145 kg</li>
+                <li>K = 109 J</li>
+            </ul>
+            
+            <p><strong>Unknowns:</strong></p>
+            <ul>
+                <li><math><mover><mi>v</mi><mo>&#x2192;</mo></mover></math> = ? m/s</li>
+            </ul>
+            
+            <p><strong>Starting Equation:</strong></p>
+            <div class="math-container">
+                <math display="block">
+                    <mi>K</mi>
+                    <mo>=</mo>
+                    <mfrac>
+                        <mn>1</mn>
+                        <mn>2</mn>
+                    </mfrac>
+                    <mi>m</mi>
+                    <msup>
+                        <mover>
+                            <mi>v</mi>
+                            <mo>&#x2192;</mo>
+                        </mover>
+                        <mn>2</mn>
+                    </msup>
+                </math>
+            </div>
+            
+            <p>To solve for velocity, we must first isolate <math><mover><mi>v</mi><mo>&#x2192;</mo></mover></math>. We begin by multiplying both sides by 2 to remove the fraction:</p>
+            <div class="math-container">
+                <math display="block">
+                    <mn>2</mn>
+                    <mi>K</mi>
+                    <mo>=</mo>
+                    <mi>m</mi>
+                    <msup>
+                        <mover>
+                            <mi>v</mi>
+                            <mo>&#x2192;</mo>
+                        </mover>
+                        <mn>2</mn>
+                    </msup>
+                </math>
+            </div>
+            
+            <p>Next, we divide both sides by the mass (<math><mi>m</mi></math>):</p>
+            <div class="math-container">
+                <math display="block">
+                    <mfrac>
+                        <mrow>
+                            <mn>2</mn>
+                            <mi>K</mi>
+                        </mrow>
+                        <mi>m</mi>
+                    </mfrac>
+                    <mo>=</mo>
+                    <msup>
+                        <mover>
+                            <mi>v</mi>
+                            <mo>&#x2192;</mo>
+                        </mover>
+                        <mn>2</mn>
+                    </msup>
+                </math>
+            </div>
+            
+            <p>Finally, we take the square root of both sides to isolate the velocity:</p>
+            <p><strong>Isolated Equation:</strong></p>
+            <div class="math-container">
+                <math display="block">
+                    <mover>
+                        <mi>v</mi>
+                        <mo>&#x2192;</mo>
+                    </mover>
+                    <mo>=</mo>
+                    <msqrt>
+                        <mfrac>
+                            <mrow>
+                                <mn>2</mn>
+                                <mi>K</mi>
+                            </mrow>
+                            <mi>m</mi>
+                        </mfrac>
+                    </msqrt>
+                </math>
+            </div>
+            
+            <p><strong>Substitution:</strong></p>
+            <p>Now we substitute our known values into the isolated equation:</p>
+            <div class="math-container">
+                <math display="block">
+                    <mover>
+                        <mi>v</mi>
+                        <mo>&#x2192;</mo>
+                    </mover>
+                    <mo>=</mo>
+                    <msqrt>
+                        <mfrac>
+                            <mrow>
+                                <mn>2</mn>
+                                <mo>(</mo>
+                                <mn>109</mn>
+                                <mtext>&nbsp;J</mtext>
+                                <mo>)</mo>
+                            </mrow>
+                            <mrow>
+                                <mo>(</mo>
+                                <mn>0.145</mn>
+                                <mtext>&nbsp;kg</mtext>
+                                <mo>)</mo>
+                            </mrow>
+                        </mfrac>
+                    </msqrt>
+                </math>
+            </div>
+            
+            <p><strong>Unrounded Final Answer:</strong></p>
+            <div class="math-container">
+                <math display="block">
+                    <mover>
+                        <mi>v</mi>
+                        <mo>&#x2192;</mo>
+                    </mover>
+                    <mo>=</mo>
+                    <mo>+</mo>
+                    <mn>38.7743</mn>
+                    <mtext>&nbsp;m/s</mtext>
+                </math>
+            </div>
+            
+            <p><strong>Final Answer:</strong></p>
+            <p>Because both of our known values (109 J and 0.145 kg) were provided with three significant digits, our final answer must also be rounded to three significant digits.</p>
+            <div class="math-container">
+                <math display="block">
+                    <mover>
+                        <mi>v</mi>
+                        <mo>&#x2192;</mo>
+                    </mover>
+                    <mo>=</mo>
+                    <mo>+</mo>
+                    <mn>38.8</mn>
+                    <mtext>&nbsp;m/s</mtext>
+                </math>
+            </div>
+        </div>
+
+        <div class="lesson-review">
+            <h2>Lesson Review</h2>
+            <p>In this lesson, we established that the kinetic energy of an object is dictated by its mass and its velocity. You are now equipped to:</p>
+            <ul>
+                <li><strong>State the equation:</strong> <math><mi>K</mi><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mi>m</mi><msup><mover><mi>v</mi><mo>&#x2192;</mo></mover><mn>2</mn></msup></math></li>
+                <li><strong>Calculate missing variables:</strong> You successfully rearranged the base equation entirely in variables before plugging in values to solve for velocity.</li>
+                <li><strong>Understand the relationships:</strong> You learned that while changing mass linearly scales kinetic energy, changing velocity scales it exponentially.</li>
+            </ul>
+        </div>
+
+    </div>
+</body>
+</html>
